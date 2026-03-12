@@ -1,0 +1,70 @@
+/* Hichicas.com AI Widget CSS | github.com/hichicas/widget */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
+.hc-ai-wrap { font-family:Lato,sans-serif; max-width:780px; margin:56px auto 0; background:#fff; border:1px solid #e2cdb8; border-top:5px solid #c4714f; border-radius:20px; overflow:hidden; box-shadow:0 8px 48px rgba(58,35,20,0.11); }
+
+.hc-ai-header { background:linear-gradient(135deg,#fdf0e4 0%,#fce8d2 100%); padding:24px 30px 20px; display:flex; align-items:center; gap:16px; border-bottom:1px solid #e2cdb8; }
+.hc-ai-avatar { width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg,#c4714f,#c9933a); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 4px 14px rgba(196,113,79,0.35); animation:hcPulse 3s infinite; }
+@keyframes hcPulse { 0%,100%{ box-shadow:0 4px 14px rgba(196,113,79,0.35); } 50%{ box-shadow:0 4px 22px rgba(196,113,79,0.6); } }
+.hc-ai-header-text h3 { font-family:'Playfair Display',serif; font-size:18px; color:#3b2314; margin-bottom:3px; }
+.hc-ai-header-text p { font-size:12px; color:#7a4f35; }
+.hc-ai-status { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#4caf7d; letter-spacing:.5px; text-transform:uppercase; }
+.hc-ai-dot { width:8px; height:8px; border-radius:50%; background:#4caf7d; animation:hcBlink 1.8s infinite; }
+@keyframes hcBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.hc-suggestions { padding:14px 30px 10px; background:#fffaf5; border-bottom:1px solid #f0e4d4; }
+.hc-sug-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#a07858; margin-bottom:10px; display:block; }
+.hc-sug-pills { display:flex; flex-wrap:wrap; gap:7px; }
+.hc-sug-pill { background:#fff; border:1px solid #e2cdb8; border-radius:50px; padding:6px 14px; font-size:12px; color:#c4714f; font-weight:700; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.hc-sug-pill:hover { background:#c4714f; color:#fff; border-color:#c4714f; }
+
+.hc-chat-area { height:340px; overflow-y:auto; padding:22px 30px; display:flex; flex-direction:column; gap:16px; scroll-behavior:smooth; background:#fffaf5; }
+.hc-chat-area::-webkit-scrollbar { width:5px; }
+.hc-chat-area::-webkit-scrollbar-track { background:#f0e4d4; border-radius:10px; }
+.hc-chat-area::-webkit-scrollbar-thumb { background:#c4714f; border-radius:10px; }
+
+.hc-msg { display:flex; gap:10px; animation:hcMsgIn .3s ease; }
+@keyframes hcMsgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.hc-msg.user { flex-direction:row-reverse; }
+.hc-msg-avatar { width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:15px; }
+.hc-msg.ai .hc-msg-avatar { background:linear-gradient(135deg,#c4714f,#c9933a); }
+.hc-msg.user .hc-msg-avatar { background:#3b2314; }
+.hc-msg-bubble { max-width:78%; padding:12px 16px; border-radius:16px; font-size:14px; line-height:1.65; color:#3b2314; }
+.hc-msg.ai .hc-msg-bubble { background:#fff; border:1px solid #e2cdb8; border-bottom-left-radius:4px; }
+.hc-msg.user .hc-msg-bubble { background:linear-gradient(135deg,#c4714f,#c9933a); color:#fff; border-bottom-right-radius:4px; }
+
+.hc-typing .hc-msg-bubble { background:#fff; border:1px solid #e2cdb8; padding:14px 18px; }
+.hc-typing-dots { display:flex; gap:5px; align-items:center; }
+.hc-typing-dots span { width:7px; height:7px; background:#c4714f; border-radius:50%; animation:hcDot 1.2s infinite; display:inline-block; }
+.hc-typing-dots span:nth-child(2) { animation-delay:.2s; }
+.hc-typing-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes hcDot { 0%,80%,100%{transform:scale(0.7);opacity:.5} 40%{transform:scale(1);opacity:1} }
+
+.hc-products { margin-top:12px; display:flex; flex-direction:column; gap:9px; }
+.hc-prod-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#a07858; margin-bottom:6px; display:block; }
+.hc-product-card { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#fff4eb,#fdf0e4); border:1px solid #e2cdb8; border-left:4px solid #c4714f; border-radius:12px; padding:11px 14px; text-decoration:none; transition:all .22s ease; }
+.hc-product-card:hover { transform:translateX(4px); box-shadow:0 4px 16px rgba(196,113,79,0.2); border-color:#c4714f; }
+.hc-product-icon { font-size:22px; flex-shrink:0; }
+.hc-product-info { flex:1; min-width:0; }
+.hc-product-name { font-size:13px; font-weight:700; color:#3b2314; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.hc-product-desc { font-size:11px; color:#7a4f35; display:block; }
+.hc-product-cta { background:#c4714f; color:#fff; border-radius:50px; padding:5px 12px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0; letter-spacing:.3px; }
+
+.hc-input-wrap { padding:16px 30px 20px; background:#fff; border-top:1px solid #e2cdb8; }
+.hc-input-row { display:flex; gap:10px; align-items:flex-end; }
+.hc-input { flex:1; border:2px solid #e2cdb8; border-radius:14px; padding:12px 16px; font-size:14px; font-family:Lato,sans-serif; color:#3b2314; background:#fffaf5; resize:none; outline:none; transition:border-color .2s; min-height:46px; max-height:120px; line-height:1.5; }
+.hc-input:focus { border-color:#c4714f; background:#fff; }
+.hc-send-btn { width:46px; height:46px; border-radius:50%; border:none; flex-shrink:0; background:linear-gradient(135deg,#c4714f,#c9933a); color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; box-shadow:0 4px 14px rgba(196,113,79,0.3); }
+.hc-send-btn:hover { transform:scale(1.08); box-shadow:0 6px 20px rgba(196,113,79,0.45); }
+.hc-send-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.hc-input-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11px; color:#a07858; }
+.hc-amazon-badge { display:flex; align-items:center; gap:5px; background:#fff8f0; border:1px solid #e2cdb8; border-radius:50px; padding:3px 10px; font-size:10px; font-weight:700; color:#c4714f; }
+
+@media(max-width:600px){
+  .hc-ai-header { padding:18px 18px 16px; }
+  .hc-suggestions { padding:12px 18px 8px; }
+  .hc-chat-area { padding:16px 18px; height:300px; }
+  .hc-input-wrap { padding:14px 18px 16px; }
+  .hc-msg-bubble { max-width:88%; }
+  .hc-ai-status { display:none; }
+}
