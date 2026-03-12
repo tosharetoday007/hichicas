@@ -2,13 +2,12 @@
 (function(){
 
   var AFFILIATE_TAG = 'latestfotocom-20';
-  var API_KEY = 'YOUR_ANTHROPIC_API_KEY_HERE';
+  var PROXY_URL = 'https://script.google.com/macros/s/AKfycbwX5TIkIg55a0aM5cDv7ESS20xlBiC6qPc0ZEVuifSLVm6BnlkKuf0jo-JPIflccPCY/exec';
 
   /* ============================================================
-     STEP 1 — Read page context: title, labels, first 300 chars
+     STEP 1 - Read page context: title, labels, body text
   ============================================================ */
   function getPageContext(){
-    // Article title
     var title = '';
     var titleEl = document.querySelector('.post-title') ||
                   document.querySelector('h1.entry-title') ||
@@ -17,146 +16,229 @@
                   document.querySelector('title');
     if(titleEl){ title = titleEl.textContent.trim(); }
 
-    // Blogger labels (tags) — shown as links in post footer
     var labelEls = document.querySelectorAll('.post-labels a, .labels a, a[rel="tag"]');
     var labels = [];
     for(var i = 0; i < labelEls.length; i++){
       labels.push(labelEls[i].textContent.trim().toLowerCase());
     }
 
-    // First 300 characters of article body text
     var bodyText = '';
     var bodyEl = document.querySelector('.post-body') ||
                  document.querySelector('.entry-content') ||
                  document.querySelector('article');
-    if(bodyEl){ bodyText = bodyEl.textContent.replace(/\s+/g,' ').trim().substring(0, 300); }
+    if(bodyEl){ bodyText = bodyEl.textContent.replace(/\s+/g,' ').trim().substring(0, 500); }
 
     return {
-      title: title.toLowerCase(),
+      title: title,
+      titleLower: title.toLowerCase(),
       labels: labels,
       body: bodyText.toLowerCase()
     };
   }
 
   /* ============================================================
-     STEP 2 — Match page context to question bank
+     STEP 2 - Detect topic from page content
   ============================================================ */
-  var questionBank = [
-    // Brand questions
-    { keywords:['cetaphil'],         question:'Is Cetaphil good for dry skin?'          },
-    { keywords:['cetaphil'],         question:'Cetaphil lotion vs cream — which is better?' },
-    { keywords:['cerave'],           question:'Which CeraVe lotion is best for dry skin?' },
-    { keywords:['cerave'],           question:'Is CeraVe good for sensitive skin?'       },
-    { keywords:['nivea'],            question:'Which Nivea body lotion is best?'         },
-    { keywords:['nivea'],            question:'Is Nivea lotion good for very dry skin?'  },
-    { keywords:['vaseline'],         question:'How to use Vaseline as a body moisturizer?' },
-    { keywords:['dove'],             question:'Is Dove body lotion good for daily use?'  },
-    { keywords:['aveeno'],           question:'Is Aveeno lotion good for eczema?'        },
-    { keywords:['eucerin'],          question:'Is Eucerin good for extremely dry skin?'  },
-    { keywords:['palmer','palmers'], question:"Palmer's cocoa butter — what is it good for?" },
-    { keywords:['gold bond'],        question:'What does Gold Bond lotion do?'           },
-    { keywords:['jergens'],          question:'Is Jergens lotion good for daily use?'    },
-    { keywords:['neutrogena'],       question:'Which Neutrogena lotion is best?'         },
-    { keywords:['lubriderm'],        question:'Is Lubriderm good for sensitive skin?'    },
+  function detectTopic(ctx){
+    var combined = ctx.titleLower + ' ' + ctx.labels.join(' ') + ' ' + ctx.body;
 
-    // Condition questions
-    { keywords:['diabet','diabetic'],question:'What is the best lotion for diabetic skin?' },
-    { keywords:['diabet','diabetic'],question:'Can diabetics use regular body lotion?'   },
-    { keywords:['diabet','diabetic'],question:'Best lotion for diabetic feet?'           },
-    { keywords:['eczema'],           question:'What body lotion is best for eczema?'     },
-    { keywords:['eczema'],           question:'Should I use fragrance-free lotion for eczema?' },
-    { keywords:['psoriasis'],        question:'What lotion helps with psoriasis?'        },
-    { keywords:['stretch mark'],     question:'Does lotion really help stretch marks?'   },
-    { keywords:['stretch mark','pregnan'], question:'Best lotion for pregnancy stretch marks?' },
-    { keywords:['pregnan'],          question:'Is it safe to use body lotion during pregnancy?' },
-    { keywords:['pregnan'],          question:'What ingredients to avoid in lotion during pregnancy?' },
-    { keywords:['crack','heel'],     question:'How to fix cracked heels fast?'           },
-    { keywords:['crack','heel'],     question:'Best cream for cracked heels?'            },
-    { keywords:['sensitive'],        question:'What lotion is best for sensitive skin?'  },
-    { keywords:['aging','anti-aging','wrinkle'], question:'Does body lotion help with aging skin?' },
-    { keywords:['aging','anti-aging','wrinkle'], question:'What ingredients fight aging in body lotion?' },
-    { keywords:['kidney','renal'],   question:'What lotion is safe for kidney disease patients?' },
-    { keywords:['itch','itching'],   question:'What body lotion stops itching fast?'     },
-    { keywords:['dark spot','hyperpigment'], question:'Can body lotion help with dark spots?' },
+    var topics = [
+      { name:'handbag',   keywords:['handbag','purse','bag','tote','clutch','satchel','luxury bag','designer bag'] },
+      { name:'shoe',      keywords:['shoe','sneaker','heel','boot','sandal','footwear'] },
+      { name:'watch',     keywords:['watch','timepiece','rolex','omega','seiko'] },
+      { name:'jewelry',   keywords:['jewelry','jewellery','necklace','bracelet','ring','earring','diamond'] },
+      { name:'perfume',   keywords:['perfume','fragrance','cologne','scent','eau de'] },
+      { name:'skincare',  keywords:['skin care','skincare','lotion','moisturizer','cream','serum','cetaphil','cerave','eczema'] },
+      { name:'makeup',    keywords:['makeup','lipstick','foundation','mascara','eyeshadow','blush','concealer'] },
+      { name:'haircare',  keywords:['hair','shampoo','conditioner','hair care','haircare'] },
+      { name:'clothing',  keywords:['dress','shirt','jeans','outfit','fashion','clothing','wear'] },
+      { name:'sunglasses',keywords:['sunglasses','glasses','eyewear','lens','frames'] },
+      { name:'tech',      keywords:['phone','laptop','tablet','gadget','tech','electronic','smart'] },
+      { name:'travel',    keywords:['travel','luggage','suitcase','vacation','trip','hotel'] },
+      { name:'fitness',   keywords:['fitness','workout','gym','exercise','yoga','protein'] },
+      { name:'food',      keywords:['recipe','food','cooking','eat','meal','diet','nutrition'] },
+      { name:'home',      keywords:['home','decor','furniture','interior','room','kitchen'] }
+    ];
 
-    // Ingredient questions
-    { keywords:['urea'],             question:'What does urea do in body lotion?'        },
-    { keywords:['urea'],             question:'Is urea lotion safe for daily use?'       },
-    { keywords:['ceramide'],         question:'Why are ceramides important in lotion?'   },
-    { keywords:['shea butter'],      question:'Is shea butter lotion good for dry skin?' },
-    { keywords:['glycerin'],         question:'What does glycerin do in body lotion?'    },
-    { keywords:['hyaluronic'],       question:'Can hyaluronic acid be used on the body?' },
-    { keywords:['retinol'],          question:'Is retinol body lotion good for aging skin?' },
-    { keywords:['oatmeal','colloidal'],question:'What is colloidal oatmeal lotion good for?' },
-    { keywords:['lactic acid'],      question:'What does lactic acid do in body lotion?' },
-    { keywords:['niacinamide'],      question:'What are the benefits of niacinamide in lotion?' },
-    { keywords:['cocoa butter'],     question:'Is cocoa butter lotion good for dry skin?' },
-    { keywords:['spf','sunscreen'],  question:'Should I use a lotion with SPF daily?'    },
-
-    // General questions (always available as fallback)
-    { keywords:['lotion','moistur','skin','body','cream','dry'], question:'When is the best time to apply body lotion?' },
-    { keywords:['lotion','moistur','skin','body','cream','dry'], question:'How much body lotion should I use?'          },
-    { keywords:['lotion','moistur','skin','body','cream','dry'], question:'Should I apply lotion before or after getting dressed?' },
-    { keywords:['lotion','moistur','skin','body','cream','dry'], question:'What is the difference between lotion and cream?' },
-    { keywords:['lotion','moistur','skin','body','cream','dry'], question:'How do I choose the right body lotion for my skin?' }
-  ];
-
-  function getDynamicQuestions(){
-    var ctx = getPageContext();
-    var combined = ctx.title + ' ' + ctx.labels.join(' ') + ' ' + ctx.body;
-    var matched = [];
-    var seen = {};
-
-    // First pass — exact keyword matches
-    for(var i = 0; i < questionBank.length; i++){
-      var entry = questionBank[i];
-      var hit = false;
-      for(var j = 0; j < entry.keywords.length; j++){
-        if(combined.indexOf(entry.keywords[j]) !== -1){ hit = true; break; }
-      }
-      if(hit && !seen[entry.question]){
-        seen[entry.question] = true;
-        matched.push(entry.question);
-      }
-      if(matched.length >= 8){ break; }
-    }
-
-    // If less than 5 matched, fill with general fallbacks
-    if(matched.length < 5){
-      var fallbacks = [
-        'Best lotion for dry skin?',
-        'Lotion for diabetic feet?',
-        'Which Nivea lotion is best?',
-        'Cetaphil vs CeraVe — which is better?',
-        'Best lotion for eczema?',
-        'Best lotion during pregnancy?',
-        'How to fix cracked heels?',
-        "Palmer's for stretch marks?"
-      ];
-      for(var f = 0; f < fallbacks.length; f++){
-        if(matched.length >= 8){ break; }
-        if(!seen[fallbacks[f]]){
-          seen[fallbacks[f]] = true;
-          matched.push(fallbacks[f]);
-        }
+    for(var t = 0; t < topics.length; t++){
+      var topic = topics[t];
+      for(var k = 0; k < topic.keywords.length; k++){
+        if(combined.indexOf(topic.keywords[k]) !== -1){ return topic.name; }
       }
     }
-
-    return matched.slice(0, 8);
+    return 'general';
   }
 
   /* ============================================================
-     STEP 3 — Build the widget HTML dynamically
+     STEP 3 - Dynamic questions by topic
+  ============================================================ */
+  var questionsByTopic = {
+    handbag:  [
+      'What makes a luxury handbag worth the price?',
+      'How do I authenticate a designer handbag?',
+      'Which luxury handbag brands hold their value best?',
+      'What is the best starter luxury handbag?',
+      'How do I care for a leather handbag?',
+      'Louis Vuitton vs Gucci - which is better value?'
+    ],
+    shoe: [
+      'Which luxury shoe brands are worth buying?',
+      'How do I care for leather shoes?',
+      'Best shoes for comfort and style?',
+      'How to spot fake designer shoes?',
+      'Which sneaker brands hold their value?',
+      'Best shoe brands for women?'
+    ],
+    watch: [
+      'Which watch brands are best for investment?',
+      'Rolex vs Omega - which should I buy?',
+      'How do I spot a fake luxury watch?',
+      'Best entry level luxury watch?',
+      'How often should a watch be serviced?',
+      'Best watches for women?'
+    ],
+    jewelry: [
+      'How do I care for gold jewelry?',
+      'What is the best metal for everyday jewelry?',
+      'How to spot real diamonds?',
+      'Best jewelry brands for investment?',
+      'How do I clean silver jewelry at home?',
+      'Are lab diamonds worth buying?'
+    ],
+    perfume: [
+      'How do I choose the right perfume for me?',
+      'What is the difference between EDP and EDT?',
+      'Which perfumes last the longest?',
+      'Best perfumes for women in 2025?',
+      'How do I make perfume last longer on skin?',
+      'Best luxury perfume brands?'
+    ],
+    skincare: [
+      'What is the best body lotion for dry skin?',
+      'Cetaphil vs CeraVe - which is better?',
+      'Best lotion for diabetic skin?',
+      'What lotion is best for eczema?',
+      'How do I fix cracked heels?',
+      'Best lotion for sensitive skin?'
+    ],
+    makeup: [
+      'What are the best luxury makeup brands?',
+      'How do I choose the right foundation shade?',
+      'Best long lasting lipstick brands?',
+      'How do I build a basic makeup kit?',
+      'What is the best mascara for volume?',
+      'Best drugstore vs luxury makeup?'
+    ],
+    haircare: [
+      'What are the best shampoos for dry hair?',
+      'How do I repair damaged hair?',
+      'Best hair oils for growth?',
+      'How often should I wash my hair?',
+      'Best luxury hair care brands?',
+      'Best hair treatments for color treated hair?'
+    ],
+    clothing: [
+      'What are the best luxury clothing brands?',
+      'How do I build a capsule wardrobe?',
+      'What are the fashion trends for 2025?',
+      'How do I care for designer clothing?',
+      'Best sustainable fashion brands?',
+      'What are the must have wardrobe basics?'
+    ],
+    tech: [
+      'What are the best smartphones in 2025?',
+      'Is the latest iPhone worth buying?',
+      'Best laptops for everyday use?',
+      'How do I choose a smartwatch?',
+      'Best budget tech gadgets?',
+      'Apple vs Samsung - which is better?'
+    ],
+    travel: [
+      'What is the best carry on luggage brand?',
+      'How do I pack efficiently for a trip?',
+      'Best travel accessories for women?',
+      'What are the best luxury travel bags?',
+      'How do I choose a travel backpack?',
+      'Best luggage brands for frequent travelers?'
+    ],
+    fitness: [
+      'What are the best workout clothes brands?',
+      'Best fitness accessories for home workouts?',
+      'How do I choose the right gym bag?',
+      'Best running shoes for women?',
+      'What fitness equipment is worth buying?',
+      'Best yoga mat brands?'
+    ],
+    food: [
+      'What are the best kitchen tools to have?',
+      'Best cookware brands for home cooking?',
+      'How do I start eating healthier?',
+      'Best meal prep containers?',
+      'What kitchen appliances are worth buying?',
+      'Best food storage solutions?'
+    ],
+    home: [
+      'What are the best home decor trends in 2025?',
+      'How do I make a small room look bigger?',
+      'Best affordable home decor brands?',
+      'How do I choose the right sofa?',
+      'Best scented candle brands for home?',
+      'What are must have home accessories?'
+    ],
+    general: [
+      'What are the best luxury brands in 2025?',
+      'How do I spot fake luxury products?',
+      'What luxury items are worth the investment?',
+      'Best luxury gifts for women?',
+      'Which luxury brands have the best resale value?',
+      'What are the most popular luxury trends right now?'
+    ]
+  };
+
+  function getDynamicQuestions(topic, ctx){
+    var base = questionsByTopic[topic] || questionsByTopic['general'];
+    var combined = ctx.titleLower + ' ' + ctx.labels.join(' ') + ' ' + ctx.body;
+    var matched = [];
+    var seen = {};
+
+    for(var i = 0; i < base.length; i++){
+      var q = base[i];
+      var words = q.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(' ');
+      var hits = 0;
+      for(var w = 0; w < words.length; w++){
+        if(words[w].length > 4 && combined.indexOf(words[w]) !== -1){ hits++; }
+      }
+      if(hits > 0 && !seen[q]){
+        seen[q] = true;
+        matched.push({q:q, hits:hits});
+      }
+    }
+
+    matched.sort(function(a,b){ return b.hits - a.hits; });
+    var result = [];
+    for(var m = 0; m < matched.length; m++){ result.push(matched[m].q); }
+
+    for(var b = 0; b < base.length && result.length < 6; b++){
+      if(!seen[base[b]]){ result.push(base[b]); seen[base[b]] = true; }
+    }
+
+    return result.slice(0, 6);
+  }
+
+  /* ============================================================
+     STEP 4 - Build widget HTML
   ============================================================ */
   function buildWidget(){
-    var questions = getDynamicQuestions();
+    var ctx = getPageContext();
+    var topic = detectTopic(ctx);
+    var questions = getDynamicQuestions(topic, ctx);
+
     var pillsHtml = '';
     for(var i = 0; i < questions.length; i++){
       pillsHtml += '<span class="hc-sug-pill">' + questions[i] + '</span>';
     }
 
-    var ctx = getPageContext();
-    var topicHint = ctx.title ? ' about ' + ctx.title : '';
+    var topicHint = ctx.title ? ' about "' + ctx.title + '"' : '';
 
     var wrap = document.getElementById('hcAiWidget');
     if(!wrap){ return; }
@@ -166,7 +248,7 @@
         '<div class="hc-ai-avatar">&#129302;</div>' +
         '<div class="hc-ai-header-text">' +
           '<h3>Ask Hichicas AI Assistant</h3>' +
-          '<p>Skin care advice &amp; product recommendations &#8212; powered by AI</p>' +
+          '<p>Your personal shopping &amp; style advisor</p>' +
         '</div>' +
         '<div class="hc-ai-status"><div class="hc-ai-dot"></div> Online</div>' +
       '</div>' +
@@ -179,95 +261,79 @@
           '<div class="hc-msg-avatar">&#129302;</div>' +
           '<div class="hc-msg-bubble">' +
             '&#128075; <strong>Hello! I am the Hichicas AI Assistant.</strong><br/><br/>' +
-            'I have read this article' + topicHint + '. Ask me anything about skin care, ingredients, or products &#8212; I will also suggest the best options on Amazon! &#127749;' +
+            'I have read the article' + topicHint + '. Ask me anything and I will also suggest the best products on Amazon! &#127749;' +
           '</div>' +
         '</div>' +
       '</div>' +
       '<div class="hc-input-wrap">' +
         '<div class="hc-input-row">' +
-          '<textarea class="hc-input" id="hcInput" placeholder="Ask about this article, skin care, products..." rows="1"></textarea>' +
+          '<textarea class="hc-input" id="hcInput" placeholder="Ask anything about this article..." rows="1"></textarea>' +
           '<button class="hc-send-btn" id="hcSendBtn" title="Send">&#10148;</button>' +
-        '</div>' +
-        '<div class="hc-input-footer">' +
-          '<span>Powered by Claude AI &amp; Amazon</span>' +
-          '<div class="hc-amazon-badge">&#128722; Amazon Affiliate Links</div>' +
         '</div>' +
       '</div>';
   }
 
   /* ============================================================
-     STEP 4 — Amazon product logic
+     STEP 5 - Amazon product logic
   ============================================================ */
   function amazonUrl(keyword){
     return 'https://www.amazon.com/s?k=' + encodeURIComponent(keyword.trim()) + '&tag=' + AFFILIATE_TAG;
   }
 
-  function extractProductKeywords(text, userQuestion){
+  function extractProductKeywords(aiText, userQuestion, topic){
     var keywords = [];
-    var ingredientMap = {
-      'urea':'urea body lotion','ceramide':'ceramide body lotion',
-      'shea butter':'shea butter lotion','glycerin':'glycerin moisturizer',
-      'hyaluronic':'hyaluronic acid body lotion','retinol':'retinol body lotion',
-      'oatmeal':'colloidal oatmeal lotion','lactic acid':'lactic acid body lotion',
-      'niacinamide':'niacinamide body lotion','cocoa butter':'cocoa butter lotion'
-    };
-    var brandMap = {
-      'cetaphil':'Cetaphil body lotion','cerave':'CeraVe body lotion',
-      'nivea':'Nivea body lotion','vaseline':'Vaseline body lotion',
-      'dove':'Dove body lotion','aveeno':'Aveeno body lotion',
-      'eucerin':'Eucerin body lotion','palmer':"Palmer's cocoa butter lotion",
-      'gold bond':'Gold Bond body lotion','jergens':'Jergens body lotion',
-      'neutrogena':'Neutrogena body lotion','lubriderm':'Lubriderm daily moisture lotion'
-    };
-    var conditionMap = {
-      'diabet':'diabetic foot lotion','eczema':'eczema body lotion fragrance free',
-      'psoriasis':'psoriasis body lotion','dry skin':'dry skin body lotion',
-      'cracked heel':'cracked heel repair cream','stretch mark':'stretch mark cream',
-      'pregnancy':'pregnancy belly lotion','sensitive':'sensitive skin body lotion',
-      'aging':'anti aging body lotion','itching':'anti itch body lotion',
-      'kidney':'emollient body lotion dry skin'
-    };
-    var combined = (text + ' ' + userQuestion).toLowerCase();
-    for(var b in brandMap){ if(combined.indexOf(b) !== -1 && keywords.indexOf(brandMap[b]) === -1){ keywords.push(brandMap[b]); } }
-    for(var c in conditionMap){ if(combined.indexOf(c) !== -1 && keywords.indexOf(conditionMap[c]) === -1){ keywords.push(conditionMap[c]); } }
-    for(var ing in ingredientMap){ if(combined.indexOf(ing) !== -1 && keywords.indexOf(ingredientMap[ing]) === -1){ keywords.push(ingredientMap[ing]); } }
-    if(keywords.length === 0){ keywords.push('best body lotion moisturizer'); }
-    return keywords.slice(0,3);
-  }
+    var combined = (aiText + ' ' + userQuestion).toLowerCase();
 
-  function getProductIcon(k){
-    k = k.toLowerCase();
-    if(k.indexOf('foot') !== -1 || k.indexOf('heel') !== -1){ return '🦵'; }
-    if(k.indexOf('stretch') !== -1 || k.indexOf('pregnan') !== -1){ return '🤰'; }
-    if(k.indexOf('eczema') !== -1 || k.indexOf('sensitive') !== -1){ return '🌿'; }
-    if(k.indexOf('anti aging') !== -1 || k.indexOf('retinol') !== -1){ return '✨'; }
-    if(k.indexOf('diabet') !== -1){ return '🩺'; }
-    return '🧴';
-  }
+    var topicDefaults = {
+      handbag:   ['luxury handbag women','designer tote bag','leather crossbody bag'],
+      shoe:      ['luxury shoes women','designer sneakers','leather heels'],
+      watch:     ['luxury watch women','automatic watch','designer watch men'],
+      jewelry:   ['gold jewelry women','diamond necklace','luxury bracelet'],
+      perfume:   ['luxury perfume women','long lasting fragrance','designer cologne'],
+      skincare:  ['body lotion dry skin','CeraVe moisturizer','Cetaphil body lotion'],
+      makeup:    ['luxury foundation','long lasting lipstick','designer mascara'],
+      haircare:  ['hair growth serum','luxury shampoo','hair repair treatment'],
+      clothing:  ['luxury fashion women','designer dress','capsule wardrobe essentials'],
+      tech:      ['best smartphone 2025','laptop women','smartwatch'],
+      travel:    ['carry on luggage','travel accessories women','weekender bag'],
+      fitness:   ['workout clothes women','yoga mat','gym bag'],
+      food:      ['cookware set','meal prep containers','kitchen appliances'],
+      home:      ['home decor','scented candles','throw pillows'],
+      general:   ['luxury gifts women','best luxury products 2025','designer accessories']
+    };
 
-  function getProductDesc(k){
-    k = k.toLowerCase();
-    if(k.indexOf('diabetic') !== -1){ return 'Specially formulated for diabetic skin care'; }
-    if(k.indexOf('eczema') !== -1){ return 'Fragrance-free, dermatologist recommended'; }
-    if(k.indexOf('heel') !== -1){ return 'Fast-healing formula for cracked heels'; }
-    if(k.indexOf('stretch') !== -1){ return 'Popular for pregnancy skin care'; }
-    if(k.indexOf('anti aging') !== -1){ return 'Firms and smooths aging skin'; }
-    if(k.indexOf('urea') !== -1){ return 'Deep moisturizing with keratolytic action'; }
-    if(k.indexOf('ceramide') !== -1){ return "Restores the skin's natural barrier"; }
-    if(k.indexOf('oatmeal') !== -1){ return 'Soothes irritated and sensitive skin'; }
-    return 'Top-rated moisturizer on Amazon';
+    var brands = [
+      'louis vuitton','gucci','prada','chanel','hermes','dior','burberry','coach',
+      'michael kors','kate spade','tory burch','versace','fendi','balenciaga',
+      'rolex','omega','cartier','tiffany','louboutin','jimmy choo',
+      'cetaphil','cerave','nivea','neutrogena','aveeno','eucerin'
+    ];
+
+    for(var b = 0; b < brands.length; b++){
+      if(combined.indexOf(brands[b]) !== -1 && keywords.indexOf(brands[b]) === -1){
+        keywords.push(brands[b]);
+      }
+    }
+
+    if(keywords.length === 0){
+      var defaults = topicDefaults[topic] || topicDefaults['general'];
+      keywords.push(defaults[0]);
+      if(defaults[1]){ keywords.push(defaults[1]); }
+    }
+
+    return keywords.slice(0, 3);
   }
 
   function buildProductCards(keywords){
     if(!keywords || keywords.length === 0){ return ''; }
-    var html = '<div class="hc-products"><span class="hc-prod-label">🛒 Recommended Products on Amazon</span>';
+    var html = '<div class="hc-products"><span class="hc-prod-label">&#128722; Recommended on Amazon</span>';
     for(var i = 0; i < keywords.length; i++){
       var kw = keywords[i];
       var displayName = kw.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
       html += '<a href="' + amazonUrl(kw) + '" target="_blank" rel="noopener" class="hc-product-card">';
-      html += '<span class="hc-product-icon">' + getProductIcon(kw) + '</span>';
+      html += '<span class="hc-product-icon">&#128722;</span>';
       html += '<div class="hc-product-info"><span class="hc-product-name">' + displayName + '</span>';
-      html += '<span class="hc-product-desc">' + getProductDesc(kw) + '</span></div>';
+      html += '<span class="hc-product-desc">View on Amazon</span></div>';
       html += '<span class="hc-product-cta">Shop &rarr;</span></a>';
     }
     html += '</div>';
@@ -275,13 +341,13 @@
   }
 
   /* ============================================================
-     STEP 5 — Chat logic
+     STEP 6 - Chat logic
   ============================================================ */
   function addMsg(role, html){
     var area = document.getElementById('hcChatArea');
     var div = document.createElement('div');
     div.className = 'hc-msg ' + role;
-    var icon = (role === 'ai') ? '🤖' : '👤';
+    var icon = (role === 'ai') ? '&#129302;' : '&#128100;';
     div.innerHTML = '<div class="hc-msg-avatar">' + icon + '</div><div class="hc-msg-bubble">' + html + '</div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
@@ -293,7 +359,7 @@
     var div = document.createElement('div');
     div.className = 'hc-msg ai hc-typing';
     div.id = 'hcTyping';
-    div.innerHTML = '<div class="hc-msg-avatar">🤖</div><div class="hc-msg-bubble"><div class="hc-typing-dots"><span></span><span></span><span></span></div></div>';
+    div.innerHTML = '<div class="hc-msg-avatar">&#129302;</div><div class="hc-msg-bubble"><div class="hc-typing-dots"><span></span><span></span><span></span></div></div>';
     area.appendChild(div);
     area.scrollTop = area.scrollHeight;
   }
@@ -305,22 +371,24 @@
 
   function callAI(userMessage){
     var ctx = getPageContext();
-    var systemPrompt = 'You are the Hichicas AI Skin Care Assistant on hichicas.com. ' +
-      'The visitor is reading an article titled: "' + ctx.title + '". ' +
-      'Article labels/tags: ' + (ctx.labels.length ? ctx.labels.join(', ') : 'general skin care') + '. ' +
-      'You are a friendly expert beauty and skin care advisor. Answer questions about body lotion, skin care products, ingredients, and skin conditions. ' +
-      'Be warm and conversational. Keep answers to 3-5 sentences. Always mention 1-3 relevant product types or brands. ' +
-      'For medical conditions always add: Please consult your doctor for personalized medical advice. ' +
-      'Do not use markdown headers. End with a brief encouraging note. Be AdSense-safe always.';
+    var topic = detectTopic(ctx);
 
-    return fetch('https://script.google.com/macros/s/AKfycbwX5TIkIg55a0aM5cDv7ESS20xlBiC6qPc0ZEVuifSLVm6BnlkKuf0jo-JPIflccPCY/exec', {
+    var systemPrompt =
+      'You are the Hichicas AI Assistant on hichicas.com - a friendly expert shopping and lifestyle advisor. ' +
+      'The visitor is reading an article titled: "' + ctx.title + '". ' +
+      'Article topic category: ' + topic + '. ' +
+      'Article labels: ' + (ctx.labels.length ? ctx.labels.join(', ') : 'general') + '. ' +
+      'Answer questions related to this article topic - whether it is handbags, shoes, watches, jewelry, skincare, fashion, tech or any other lifestyle topic. ' +
+      'Be warm, helpful and conversational. Keep answers to 3-5 sentences. ' +
+      'Always mention 1-3 relevant product names or brands when helpful. ' +
+      'Do not use markdown headers or bullet points. ' +
+      'End with a brief encouraging note. ' +
+      'Be AdSense-safe always.';
+
+    return fetch(PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }]
       })
@@ -335,28 +403,32 @@
     if(!text || !text.trim()){ return; }
     var btn = document.getElementById('hcSendBtn');
     var input = document.getElementById('hcInput');
+    var ctx = getPageContext();
+    var topic = detectTopic(ctx);
+
     addMsg('user', text);
     input.value = '';
     input.style.height = 'auto';
     btn.disabled = true;
     showTyping();
+
     callAI(text).then(function(aiText){
       removeTyping();
-      var keywords = extractProductKeywords(aiText, text);
+      var keywords = extractProductKeywords(aiText, text, topic);
       var formatted = aiText.replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
       addMsg('ai', formatted + buildProductCards(keywords));
       btn.disabled = false;
       input.focus();
     }).catch(function(){
       removeTyping();
-      addMsg('ai','😟 Sorry, something went wrong. Please try again!');
+      addMsg('ai','&#128533; Sorry, something went wrong. Please try again!');
       btn.disabled = false;
       input.focus();
     });
   }
 
   /* ============================================================
-     STEP 6 — Init
+     STEP 7 - Init
   ============================================================ */
   function init(){
     buildWidget();
