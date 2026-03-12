@@ -333,7 +333,7 @@
       html += '<a href="' + amazonUrl(kw) + '" target="_blank" rel="noopener" class="hc-product-card">';
       html += '<span class="hc-product-icon">&#128722;</span>';
       html += '<div class="hc-product-info"><span class="hc-product-name">' + displayName + '</span>';
-      html += '<span class="hc-product-desc">View on Amazon</span></div>';
+      html += '<span class="hc-product-desc"></span></div>';
       html += '<span class="hc-product-cta">Shop &rarr;</span></a>';
     }
     html += '</div>';
