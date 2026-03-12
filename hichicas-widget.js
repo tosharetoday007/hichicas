@@ -2,7 +2,7 @@
 (function(){
 
   var AFFILIATE_TAG = 'latestfotocom-20';
-  var API_KEY = window.HICHICAS_API_KEY || '';
+  var API_KEY = 'YOUR_ANTHROPIC_API_KEY_HERE';
 
   /* ============================================================
      STEP 1 — Read page context: title, labels, first 300 chars
@@ -313,13 +313,10 @@
       'For medical conditions always add: Please consult your doctor for personalized medical advice. ' +
       'Do not use markdown headers. End with a brief encouraging note. Be AdSense-safe always.';
 
-    return fetch('https://api.anthropic.com/v1/messages', {
+    return fetch('https://script.google.com/macros/s/AKfycbwX5TIkIg55a0aM5cDv7ESS20xlBiC6qPc0ZEVuifSLVm6BnlkKuf0jo-JPIflccPCY/exec', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-request-proxy': 'true'
+        'Content-Type': 'text/plain'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
