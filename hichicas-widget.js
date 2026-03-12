@@ -40,32 +40,52 @@
      STEP 2 - Detect topic from page content
   ============================================================ */
   function detectTopic(ctx){
-    var combined = ctx.titleLower + ' ' + ctx.labels.join(' ') + ' ' + ctx.body;
-
     var topics = [
-      { name:'handbag',   keywords:['handbag','purse','bag','tote','clutch','satchel','luxury bag','designer bag'] },
+      { name:'ayurveda',  keywords:['ayurvedic','ayurveda','triphala','guggul','ashwagandha','turmeric','herbal medicine','patanjali','dabur','chyawanprash'] },
+      { name:'health',    keywords:['obesity','weight loss','diabetes','blood pressure','cholesterol','thyroid','medicine','treatment','symptoms','disease','remedy','supplement','vitamin','health','wellness','pain relief','digestion','immunity'] },
+      { name:'handbag',   keywords:['handbag','purse','tote bag','clutch bag','satchel','luxury bag','designer bag'] },
       { name:'shoe',      keywords:['shoe','sneaker','heel','boot','sandal','footwear'] },
       { name:'watch',     keywords:['watch','timepiece','rolex','omega','seiko'] },
       { name:'jewelry',   keywords:['jewelry','jewellery','necklace','bracelet','ring','earring','diamond'] },
       { name:'perfume',   keywords:['perfume','fragrance','cologne','scent','eau de'] },
-      { name:'skincare',  keywords:['skin care','skincare','lotion','moisturizer','cream','serum','cetaphil','cerave','eczema'] },
+      { name:'skincare',  keywords:['skin care','skincare','lotion','moisturizer','serum','cetaphil','cerave','eczema','dry skin'] },
       { name:'makeup',    keywords:['makeup','lipstick','foundation','mascara','eyeshadow','blush','concealer'] },
-      { name:'haircare',  keywords:['hair','shampoo','conditioner','hair care','haircare'] },
-      { name:'clothing',  keywords:['dress','shirt','jeans','outfit','fashion','clothing','wear'] },
-      { name:'sunglasses',keywords:['sunglasses','glasses','eyewear','lens','frames'] },
-      { name:'tech',      keywords:['phone','laptop','tablet','gadget','tech','electronic','smart'] },
-      { name:'travel',    keywords:['travel','luggage','suitcase','vacation','trip','hotel'] },
-      { name:'fitness',   keywords:['fitness','workout','gym','exercise','yoga','protein'] },
-      { name:'food',      keywords:['recipe','food','cooking','eat','meal','diet','nutrition'] },
-      { name:'home',      keywords:['home','decor','furniture','interior','room','kitchen'] }
+      { name:'haircare',  keywords:['shampoo','conditioner','hair care','haircare','hair loss','hair growth'] },
+      { name:'clothing',  keywords:['fashion clothing','dress collection','outfit ideas','wardrobe','capsule wardrobe'] },
+      { name:'sunglasses',keywords:['sunglasses','eyewear','optical frames'] },
+      { name:'tech',      keywords:['smartphone','laptop','tablet','gadget','electronic','smartwatch','iphone','samsung'] },
+      { name:'travel',    keywords:['luggage','suitcase','vacation','travel tips','hotel','flight','airport'] },
+      { name:'fitness',   keywords:['workout','gym','exercise','yoga','protein powder','running'] },
+      { name:'food',      keywords:['recipe','cooking','meal','diet plan','nutrition','baking','cuisine'] },
+      { name:'home',      keywords:['home decor','furniture','interior design','room makeover','kitchen'] },
+      { name:'baby',      keywords:['baby','infant','newborn','toddler','pregnancy','maternity','breastfeeding'] },
+      { name:'pet',       keywords:['dog','cat','pet','puppy','kitten','animal care'] },
+      { name:'finance',   keywords:['invest','stock','money','saving','budget','financial','loan','insurance'] },
+      { name:'education', keywords:['study','learn','course','school','college','exam','skill','training'] }
     ];
 
+    // Check title FIRST with highest priority
     for(var t = 0; t < topics.length; t++){
-      var topic = topics[t];
-      for(var k = 0; k < topic.keywords.length; k++){
-        if(combined.indexOf(topic.keywords[k]) !== -1){ return topic.name; }
+      for(var k = 0; k < topics[t].keywords.length; k++){
+        if(ctx.titleLower.indexOf(topics[t].keywords[k]) !== -1){ return topics[t].name; }
       }
     }
+
+    // Then check body text
+    for(var t2 = 0; t2 < topics.length; t2++){
+      for(var k2 = 0; k2 < topics[t2].keywords.length; k2++){
+        if(ctx.body.indexOf(topics[t2].keywords[k2]) !== -1){ return topics[t2].name; }
+      }
+    }
+
+    // Labels last (least reliable)
+    var labelStr = ctx.labels.join(' ');
+    for(var t3 = 0; t3 < topics.length; t3++){
+      for(var k3 = 0; k3 < topics[t3].keywords.length; k3++){
+        if(labelStr.indexOf(topics[t3].keywords[k3]) !== -1){ return topics[t3].name; }
+      }
+    }
+
     return 'general';
   }
 
@@ -185,13 +205,61 @@
       'Best scented candle brands for home?',
       'What are must have home accessories?'
     ],
+    ayurveda: [
+      'What are the best Ayurvedic remedies for obesity?',
+      'Is Triphala effective for weight loss?',
+      'What does Ayurveda say about digestion and weight?',
+      'Which Ayurvedic brands are most trusted?',
+      'How long does Ayurvedic treatment take to work?',
+      'Can Ayurvedic medicine be taken with regular medicine?'
+    ],
+    health: [
+      'What are the best natural remedies for this condition?',
+      'Which supplements are most effective?',
+      'What lifestyle changes help the most?',
+      'Are there any side effects to watch for?',
+      'How long before I see results?',
+      'What foods should I avoid?'
+    ],
+    baby: [
+      'What are the best baby products to buy?',
+      'How do I choose safe baby skincare?',
+      'Best baby monitors in 2025?',
+      'What are must have baby items?',
+      'Best baby food brands?',
+      'How to choose the right baby carrier?'
+    ],
+    pet: [
+      'What are the best pet food brands?',
+      'How do I choose the right pet supplies?',
+      'Best grooming products for dogs?',
+      'What vitamins are good for pets?',
+      'Best pet care products on Amazon?',
+      'How do I keep my pet healthy?'
+    ],
+    finance: [
+      'What are the best books on personal finance?',
+      'How do I start investing with little money?',
+      'Best budgeting tools and apps?',
+      'What are the safest investments?',
+      'How do I save money faster?',
+      'Best financial planning resources?'
+    ],
+    education: [
+      'What are the best online learning platforms?',
+      'How do I study more effectively?',
+      'Best books for self improvement?',
+      'What skills are most valuable to learn?',
+      'Best courses for career growth?',
+      'How do I stay motivated while studying?'
+    ],
     general: [
-      'What are the best luxury brands in 2025?',
-      'How do I spot fake luxury products?',
-      'What luxury items are worth the investment?',
-      'Best luxury gifts for women?',
-      'Which luxury brands have the best resale value?',
-      'What are the most popular luxury trends right now?'
+      'What are the best products related to this topic?',
+      'What should I know before buying?',
+      'What are the top recommendations?',
+      'How do I choose the best option?',
+      'What do experts recommend?',
+      'What are the most popular choices right now?'
     ]
   };
 
@@ -299,7 +367,13 @@
       fitness:   ['workout clothes women','yoga mat','gym bag'],
       food:      ['cookware set','meal prep containers','kitchen appliances'],
       home:      ['home decor','scented candles','throw pillows'],
-      general:   ['luxury gifts women','best luxury products 2025','designer accessories']
+      ayurveda:  ['Triphala supplement','Patanjali weight loss','Ayurvedic herbal supplement'],
+      health:    ['natural health supplement','weight loss supplement','vitamins health'],
+      baby:      ['baby essentials kit','baby skincare set','baby monitor'],
+      pet:       ['dog food premium','cat care essentials','pet grooming kit'],
+      finance:   ['personal finance books','budgeting planner','investing for beginners book'],
+      education: ['online learning subscription','self improvement books','productivity planner'],
+      general:   ['best products 2025','top rated amazon products','gifts for her']
     };
 
     var brands = [
