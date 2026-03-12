@@ -2,7 +2,7 @@
 (function(){
 
   var AFFILIATE_TAG = 'latestfotocom-20';
-  var API_KEY = 'YOUR_ANTHROPIC_API_KEY_HERE';
+  var API_KEY = window.HICHICAS_API_KEY || '';
 
   /* ============================================================
      STEP 1 — Read page context: title, labels, first 300 chars
