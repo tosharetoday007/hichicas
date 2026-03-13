@@ -234,7 +234,7 @@
       'How do I choose the right pet supplies?',
       'Best grooming products for dogs?',
       'What vitamins are good for pets?',
-      'Best pet care products on Amazon?',
+      'What are the best pet care products?',
       'How do I keep my pet healthy?'
     ],
     finance: [
@@ -329,7 +329,7 @@
           '<div class="hc-msg-avatar">&#129302;</div>' +
           '<div class="hc-msg-bubble">' +
             '&#128075; <strong>Hello! I am the Hichicas AI Assistant.</strong><br/><br/>' +
-            'I have read the article' + topicHint + '. Ask me anything and I will also suggest the best products on Amazon! &#127749;' +
+            'I have read the article' + topicHint + '. Ask me anything and I will suggest helpful products! &#127749;' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -400,14 +400,14 @@
 
   function buildProductCards(keywords){
     if(!keywords || keywords.length === 0){ return ''; }
-    var html = '<div class="hc-products"><span class="hc-prod-label">&#128722; Recommended on Amazon</span>';
+    var html = '<div class="hc-products">';
     for(var i = 0; i < keywords.length; i++){
       var kw = keywords[i];
       var displayName = kw.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
       html += '<a href="' + amazonUrl(kw) + '" target="_blank" rel="noopener" class="hc-product-card">';
       html += '<span class="hc-product-icon">&#128722;</span>';
       html += '<div class="hc-product-info"><span class="hc-product-name">' + displayName + '</span>';
-      html += '<span class="hc-product-desc"></span></div>';
+      html += '</div>';
       html += '<span class="hc-product-cta">Shop &rarr;</span></a>';
     }
     html += '</div>';
